@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/types"
 
+	"github.com/gostaticanalysis/analysisutil"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/buildssa"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -37,12 +38,36 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
+	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	// Fast path: if the package doesn't import database/sql,
 	// skip the traversal.
 	if !imports(pass.Pkg, "database/sql") {
 		return nil, nil
+	}
+
+	rowsType := analysisutil.TypeOf(pass, "database/sql", "*Rows")
+	if rowsType == nil {
+		// skip checking
+		return nil, nil
+	}
+
+	var methods []*types.Func
+	if m := analysisutil.MethodOf(rowsType, "Close"); m != nil {
+		methods = append(methods, m)
+	}
+
+	for _, f := range funcs {
+		for _, b := range f.Blocks {
+			for i := range b.Instrs {
+				pos := b.Instrs[i].Pos()
+				called, ok := analysisutil.CalledFrom(b, i, rowsType, methods...)
+				if ok && !called {
+					pass.Reportf(pos, "rows.Close must be called")
+				}
+			}
+		}
 	}
 
 	nodeFilter := []ast.Node{
