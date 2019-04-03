@@ -5,6 +5,7 @@ package sqlrows
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 
 	"github.com/gostaticanalysis/analysisutil"
@@ -62,17 +63,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	for _, f := range funcs {
 		for _, b := range f.Blocks {
 			for i := range b.Instrs {
-				pos := b.Instrs[i].Pos()
+				var pos token.Pos
+				switch instr := b.Instrs[i].(type) {
+				case *ssa.Extract:
+					pos = instr.Tuple.Pos()
+				default:
+					pos = instr.Pos()
+				}
 				called, ok := analysisutil.CalledFrom(b, i, rowsType, methods...)
 				if ok && !called {
-					if pos == 0 {
-						var buf [10]*ssa.Value
-						for _, op := range b.Instrs[i].Operands(buf[:0]) {
-							if fn, ok := (*op).(*ssa.Call); ok {
-								pos = fn.Pos()
-							}
-						}
-					}
 					pass.Reportf(pos, "rows.Close must be called")
 				}
 			}
