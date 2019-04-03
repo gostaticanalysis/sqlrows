@@ -12,6 +12,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/buildssa"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
+	"golang.org/x/tools/go/ssa"
 )
 
 const Doc = `check for mistakes using Rows iterator of database/sql 
@@ -64,6 +65,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				pos := b.Instrs[i].Pos()
 				called, ok := analysisutil.CalledFrom(b, i, rowsType, methods...)
 				if ok && !called {
+					if pos == 0 {
+						var buf [10]*ssa.Value
+						for _, op := range b.Instrs[i].Operands(buf[:0]) {
+							if fn, ok := (*op).(*ssa.Call); ok {
+								pos = fn.Pos()
+							}
+						}
+					}
 					pass.Reportf(pos, "rows.Close must be called")
 				}
 			}
