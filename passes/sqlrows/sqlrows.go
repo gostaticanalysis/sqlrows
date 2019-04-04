@@ -4,7 +4,6 @@
 package sqlrows
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -68,7 +67,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				var pos token.Pos
 				switch instr := b.Instrs[i].(type) {
 				case *ssa.Extract:
-					fmt.Println(instr.Type())
 					pos = instr.Tuple.Pos()
 				default:
 					pos = instr.Pos()
