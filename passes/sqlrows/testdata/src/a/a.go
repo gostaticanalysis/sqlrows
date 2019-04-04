@@ -57,6 +57,16 @@ func issue1() {
 	defer rows.Close() // OK
 }
 
+func issue3() {
+	readDB, err := sql.Open("mysql", "root:root@tcp(localhost:3306)/mysql?parseTime=true&charset=utf8mb4")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	rows, err := readDB.Query("SELECT 1") // want "rows.Close must be called in defer function"
+	rows.Close()
+}
+
 func skip() {
 	fmt.Print("skip")
 }

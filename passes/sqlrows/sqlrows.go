@@ -65,13 +65,26 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		for _, b := range f.Blocks {
 			for i := range b.Instrs {
 				var pos token.Pos
+				var refs *[]ssa.Instruction
 				switch instr := b.Instrs[i].(type) {
 				case *ssa.Extract:
 					pos = instr.Tuple.Pos()
+					refs = instr.Referrers()
 				default:
 					pos = instr.Pos()
 				}
 				called, ok := sqlrowsutil.CalledFrom(b, i, rowsType, methods...)
+				if called {
+					var defered bool
+					for _, ref := range *refs {
+						if _, ok := ref.(*ssa.Defer); ok {
+							defered = true
+						}
+					}
+					if !defered {
+						pass.Reportf(pos, "rows.Close must be called in defer function")
+					}
+				}
 				if ok && !called {
 					pass.Reportf(pos, "rows.Close must be called")
 				}
