@@ -4,11 +4,13 @@
 package sqlrows
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
 
 	"github.com/gostaticanalysis/analysisutil"
+	"github.com/gostaticanalysis/sqlrows/sqlrowsutil"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/buildssa"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -66,12 +68,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				var pos token.Pos
 				switch instr := b.Instrs[i].(type) {
 				case *ssa.Extract:
+					fmt.Println(instr.Type())
 					pos = instr.Tuple.Pos()
 				default:
 					pos = instr.Pos()
 				}
-				called, ok := analysisutil.CalledFrom(b, i, rowsType, methods...)
+				called, ok := sqlrowsutil.CalledFrom(b, i, rowsType, methods...)
 				if ok && !called {
+					for _, instr := range b.Instrs {
+						fmt.Println(instr.String())
+					}
 					pass.Reportf(pos, "rows.Close must be called")
 				}
 			}

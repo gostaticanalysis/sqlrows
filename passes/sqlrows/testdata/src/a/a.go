@@ -44,6 +44,19 @@ func closeNotCalled() {
 	}
 }
 
+func issue1() {
+	readDB, err := sql.Open("mysql", "root:root@tcp(localhost:3306)/mysql?parseTime=true&charset=utf8mb4")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	rows, err := readDB.Query("SELECT 1")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close() // OK
+}
+
 func skip() {
 	fmt.Print("skip")
 }
