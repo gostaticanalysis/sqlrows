@@ -75,9 +75,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				}
 				called, ok := sqlrowsutil.CalledFrom(b, i, rowsType, methods...)
 				if ok && !called {
-					for _, instr := range b.Instrs {
-						fmt.Println(instr.String())
-					}
 					pass.Reportf(pos, "rows.Close must be called")
 				}
 			}
