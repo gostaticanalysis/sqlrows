@@ -4,6 +4,7 @@
 package sqlrows
 
 import (
+	"flag"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -30,6 +31,10 @@ determines whether the returned records are valid:
 This checker helps uncover latent nil dereference bugs by reporting a
 diagnostic for such mistakes.`
 
+var (
+	flagCheckErr *bool
+)
+
 var Analyzer = &analysis.Analyzer{
 	Name: "sqlrows",
 	Doc:  Doc,
@@ -37,6 +42,11 @@ var Analyzer = &analysis.Analyzer{
 		inspect.Analyzer,
 		buildssa.Analyzer,
 	},
+	Flags: func() flag.FlagSet {
+		flagSet := flag.NewFlagSet("sqlrows", flag.ExitOnError)
+		flagCheckErr = flagSet.Bool("checkerr", false, "check wether rows.Err() has been called")
+		return *flagSet
+	}(),
 	Run: run,
 }
 
@@ -59,6 +69,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	var methods []*types.Func
 	if m := analysisutil.MethodOf(rowsType, "Close"); m != nil {
 		methods = append(methods, m)
+	}
+
+	var errMethod *types.Func
+	if m := analysisutil.MethodOf(rowsType, "Err"); m != nil {
+		errMethod = m
 	}
 
 	for _, f := range funcs {
@@ -87,6 +102,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				}
 				if ok && !called {
 					pass.Reportf(pos, "rows.Close must be called")
+				}
+
+				if *flagCheckErr {
+					if called, ok := sqlrowsutil.CalledFrom(b, i, rowsType, errMethod); ok && !called {
+						pass.Reportf(pos, "rows.Err must be called")
+					}
 				}
 			}
 		}
@@ -134,6 +155,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 		return true
 	})
+
 	return nil, nil
 }
 
