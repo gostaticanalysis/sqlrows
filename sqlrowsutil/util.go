@@ -50,7 +50,7 @@ func (c *CalledChecker) Func(instr ssa.Instruction, recv ssa.Value, f *types.Fun
 }
 
 // From checks whether receiver's method is called in an instruction
-// which belogns to after i-th instructions, or in succsor blocks of b.
+// which belongs to after i-th instructions, or in successor blocks of b.
 // The first result is above value.
 // The second result is whether type of i-th instruction does not much receiver
 // or matches with ignore cases.
@@ -192,7 +192,7 @@ func (c *calledFrom) succs(b *ssa.BasicBlock) bool {
 }
 
 // CalledFrom checks whether receiver's method is called in an instruction
-// which belogns to after i-th instructions, or in succsor blocks of b.
+// which belongs to after i-th instructions, or in successor blocks of b.
 // The first result is above value.
 // The second result is whether type of i-th instruction does not much receiver
 // or matches with ignore cases.
