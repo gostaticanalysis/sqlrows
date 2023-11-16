@@ -44,7 +44,7 @@ var Analyzer = &analysis.Analyzer{
 	},
 	Flags: func() flag.FlagSet {
 		flagSet := flag.NewFlagSet("sqlrows", flag.ExitOnError)
-		flagCheckErr = flagSet.Bool("checkerr", false, "check wether rows.Err() has been called")
+		flagCheckErr = flagSet.Bool("checkerr", false, "check whether rows.Err() has been called")
 		return *flagSet
 	}(),
 	Run: run,
