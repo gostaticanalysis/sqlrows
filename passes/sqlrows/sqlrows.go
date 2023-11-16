@@ -91,11 +91,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				called, ok := sqlrowsutil.CalledFrom(b, i, rowsType, methods...)
 				if called {
 					var defered bool
-					for _, ref := range *refs {
-						if _, ok := ref.(*ssa.Defer); ok {
-							defered = true
+					if refs != nil {
+						for _, ref := range *refs {
+							if _, ok := ref.(*ssa.Defer); ok {
+								defered = true
+							}
 						}
+					} else {
+						pass.Reportf(pos, "*refs is nil for some reason. This line at least prevents a panic")
 					}
+
 					if !defered {
 						pass.Reportf(pos, "rows.Close must be called in defer function")
 					}
